@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON_CORE // Productivity Dashboard</title>
+    
+    <!-- External Assets -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --bg-card: rgba(15, 15, 15, 0.8);
+            --accent: #00ff66;
+            --secondary: #00c8ff;
+            --text-main: #e0e0e0;
+            --text-dim: #888;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border: rgba(255, 255, 255, 0.1);
+            --neon-shadow: 0 0 15px rgba(0, 255, 102, 0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-deep);
+            color: var(--text-main);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* Glassmorphism Utility */
+        .glass {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            gap: 20px;
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            margin-bottom: 10px;
+        }
+
+        .header-left h1 {
+            font-size: 1.5rem;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-transform: uppercase;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-right {
+            text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #digital-clock {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.3);
+        }
+
+        /* Main Grid */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 35% 64%;
+            gap: 20px;
+        }
+
+        /* Task Sidebar (Left) */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-bottom: 15px;
+            color: var(--text-dim);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 15px;
+        }
+
+        input, select, textarea {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 8px;
+            color: white;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        input:focus { border-color: var(--accent); box-shadow: var(--neon-shadow); }
+
+        .btn-primary {
+            background: var(--accent);
+            color: black;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            text-transform: uppercase;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(0, 255, 102, 0.4);
+        }
+
+        /* Task List */
+        .task-list {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .task-card {
+            background: rgba(255,255,255,0.02);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 4px solid var(--accent);
+            animation: slideIn 0.3s ease;
+        }
+
+        .task-card.completed {
+            opacity: 0.5;
+            text-decoration: line-through;
+            border-left-color: var(--text-dim);
+        }
+
+        /* Content Area (Right) */
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: block;
+            color: var(--accent);
+        }
+
+        .stat-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        /* Charts Row */
+        .charts-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-box {
+            padding: 20px;
+            height: 300px;
+        }
+
+        /* Productivity Score Area */
+        .score-section {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+        }
+
+        .progress-circle-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        /* Habit/Mood/Finance Grid */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+
+        /* Floating Actions */
+        .fab-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .fab {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--secondary);
+            color: black;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 200, 255, 0.3);
+            transition: var(--transition);
+        }
+
+        .fab:hover { transform: scale(1.1); }
+
+        /* Animations */
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout { grid-template-columns: 1fr; }
+            .charts-container { grid-template-columns: 1fr; }
+            .bottom-grid { grid-template-columns: 1fr; }
+        }
+
+        /* Mood Emoji Selector */
+        .mood-selector {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+        .mood-btn {
+            font-size: 1.5rem;
+            cursor: pointer;
+            filter: grayscale(1);
+            transition: 0.3s;
+        }
+        .mood-btn.active { filter: grayscale(0); transform: scale(1.2); }
+
+        /* Focus Timer Modal */
+        #timer-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            display: none;
+            width: 300px;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            z-index: 999;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="overlay" id="overlay"></div>
+
+    <div class="app-container">
+        <!-- Header Section -->
+        <header class="glass">
+            <div class="header-left">
+                <h1 id="greeting">System Ready</h1>
+                <p id="current-date" style="color: var(--text-dim);"></p>
+            </div>
+            <div class="header-right">
+                <div id="digital-clock">00:00:00</div>
+                <div id="productivity-label" style="color: var(--accent); font-size: 0.8rem;">PRODUCTIVITY: EXCELLENT</div>
+            </div>
+        </header>
+
+        <div class="main-layout">
+            <!-- Left Sidebar: Task Management -->
+            <div class="sidebar">
+                <div class="glass input-group">
+                    <p class="card-title">Initialize Task <i class="fas fa-plus"></i></p>
+                    <input type="text" id="task-input" placeholder="Task description...">
+                    <div style="display:flex; gap:10px;">
+                        <select id="task-category" style="flex:1;">
+                            <option value="Work">Work</option>
+                            <option value="Personal">Personal</option>
+                            <option value="Health">Health</option>
+                            <option value="Finance">Finance</option>
+                        </select>
+                        <select id="task-priority" style="flex:1;">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" onclick="addTask()">Add to Queue</button>
+                </div>
+
+                <div class="glass" style="padding: 15px;">
+                    <div class="card-title">
+                        Active Queue
+                        <div style="font-size: 12px;">
+                            <span onclick="filterTasks('all')" style="cursor:pointer; margin-left:10px;">All</span>
+                            <span onclick="filterTasks('pending')" style="cursor:pointer; margin-left:10px;">Pending</span>
+                        </div>
+                    </div>
+                    <div id="task-list" class="task-list">
+                        <!-- Tasks inject here -->
+                    </div>
+                </div>
+
+                <div class="glass" style="padding: 20px;">
+                    <p class="card-title">Water Intake</p>
+                    <div style="display:flex; align-items:center; justify-content: space-between;">
+                        <div id="water-count" style="font-size: 1.5rem; color: var(--secondary);">0 / 8 Glasses</div>
+                        <button class="btn-primary" style="padding: 5px 15px;" onclick="addWater()">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Content Area: Analytics & Trackers -->
+            <div class="content-area">
+                <!-- Top Stats -->
+                <div class="stats-grid">
+                    <div class="glass stat-card">
+                        <span class="stat-label">Daily Streak</span>
+                        <span class="stat-value" id="stat-streak">12 <i class="fas fa-fire" style="color:#ff6600"></i></span>
+                    </div>
+                    <div class="glass stat-card">
+                        <span class="stat-label">Tasks Done</span>
+                        <span class="stat-value" id="stat-done">0</span>
+                    </div>
+                    <div class="glass stat-card">
+                        <span class="stat-label">Walk Distance</span>
+                        <span class="stat-value" id="stat-walk">0.0 km</span>
+                    </div>
+                    <div class="glass stat-card">
+                        <span class="stat-label">Focus Time</span>
+                        <span class="stat-value" id="stat-focus">0h</span>
+                    </div>
+                </div>
+
+                <!-- Score Section -->
+                <div class="score-section">
+                    <div class="glass progress-circle-container">
+                        <p class="card-title">Daily Score</p>
+                        <canvas id="scoreChart" width="150" height="150"></canvas>
+                        <div id="score-percent" style="position:absolute; font-weight:700; font-size:1.2rem; margin-top:15px;">0%</div>
+                    </div>
+                    <div class="glass chart-box">
+                        <p class="card-title">Performance Analytics (Weekly)</p>
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bottom Features -->
+                <div class="bottom-grid">
+                    <!-- Habits -->
+                    <div class="glass" style="padding: 20px;">
+                        <p class="card-title">Habits</p>
+                        <div id="habit-list">
+                            <label style="display:block; margin-bottom:10px;"><input type="checkbox" onchange="updateScore()"> Meditation</label>
+                            <label style="display:block; margin-bottom:10px;"><input type="checkbox" onchange="updateScore()"> Coding</label>
+                            <label style="display:block; margin-bottom:10px;"><input type="checkbox" onchange="updateScore()"> Reading</label>
+                        </div>
+                    </div>
+
+                    <!-- Mood -->
+                    <div class="glass" style="padding: 20px;">
+                        <p class="card-title">Mood Tracker</p>
+                        <div class="mood-selector">
+                            <span class="mood-btn" onclick="setMood(0)">😡</span>
+                            <span class="mood-btn" onclick="setMood(1)">😔</span>
+                            <span class="mood-btn active" onclick="setMood(2)">😐</span>
+                            <span class="mood-btn" onclick="setMood(3)">🙂</span>
+                            <span class="mood-btn" onclick="setMood(4)">😁</span>
+                        </div>
+                        <p id="mood-status" style="text-align:center; font-size:0.8rem; color:var(--text-dim); margin-top:10px;">Status: Neutral</p>
+                    </div>
+
+                    <!-- Finance -->
+                    <div class="glass" style="padding: 20px;">
+                        <p class="card-title">Quick Ledger</p>
+                        <div style="font-size: 0.9rem; margin-bottom:10px;">Balance: <span id="balance-amt" style="color:var(--accent)">$0.00</span></div>
+                        <div style="display:flex; gap:5px;">
+                            <input type="number" id="finance-amt" placeholder="Amount" style="width:60%; padding:5px;">
+                            <button class="btn-primary" style="padding:5px;" onclick="addFinance()">Add</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notes Section -->
+                <div class="glass" style="padding: 20px; flex-grow: 1;">
+                    <p class="card-title">Sticky Notes (Autosaved)</p>
+                    <textarea id="notes-area" style="width:100%; height: 100px; background: transparent; border:none; resize:none;" placeholder="Type your thoughts here..."></textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer style="text-align: center; color: var(--text-dim); font-size: 0.7rem; padding: 20px;">
+            NEON_CORE OS v2.4 // ENCRYPTED STORAGE ACTIVE // <span id="storage-status">0.0KB USED</span>
+        </footer>
+    </div>
+
+    <!-- Floating UI -->
+    <div class="fab-container">
+        <div class="fab" title="Focus Timer" onclick="toggleTimer()"><i class="fas fa-stopwatch"></i></div>
+        <div class="fab" title="Walk Tracker" onclick="promptWalk()"><i class="fas fa-person-walking"></i></div>
+        <div class="fab" title="Export Data" onclick="exportData()"><i class="fas fa-download"></i></div>
+    </div>
+
+    <!-- Focus Timer Modal -->
+    <div class="glass" id="timer-modal">
+        <h2 style="color: var(--secondary); margin-bottom:20px;">FOCUS SESSION</h2>
+        <div id="timer-display" style="font-size: 3rem; font-family:'JetBrains Mono'; margin-bottom:20px;">25:00</div>
+        <div style="display:flex; gap:10px; justify-content: center;">
+            <button class="btn-primary" onclick="startTimer()">Start</button>
+            <button class="btn-primary" style="background:#ff3366;" onclick="toggleTimer()">Exit</button>
+        </div>
+    </div>
+
+    <script>
+        // --- State Management ---
+        let state = {
+            tasks: [],
+            water: 0,
+            mood: 2,
+            finance: 0,
+            notes: "",
+            walkSteps: 0,
+            focusMinutes: 0,
+            streak: 7
+        };
+
+        // --- Initialization ---
+        window.onload = () => {
+            loadData();
+            initClock();
+            initCharts();
+            renderTasks();
+            updateUI();
+            
+            // Check for notifications permission
+            if ("Notification" in window) Notification.requestPermission();
+        };
+
+        // --- Clock & Greeting ---
+        function initClock() {
+            const update = () => {
+                const now = new Date();
+                document.getElementById('digital-clock').innerText = now.toLocaleTimeString();
+                document.getElementById('current-date').innerText = now.toLocaleDateString('en-US', { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                });
+                
+                const hour = now.getHours();
+                let greet = "System Online";
+                if(hour < 12) greet = "Good Morning, Operator";
+                else if(hour < 18) greet = "Good Afternoon, Operator";
+                else greet = "Good Evening, Operator";
+                document.getElementById('greeting').innerText = greet;
+            };
+            setInterval(update, 1000);
+            update();
+        }
+
+        // --- Task Logic ---
+        function addTask() {
+            const input = document.getElementById('task-input');
+            const cat = document.getElementById('task-category');
+            const prio = document.getElementById('task-priority');
+            
+            if(!input.value) return;
+
+            const newTask = {
+                id: Date.now(),
+                text: input.value,
+                category: cat.value,
+                priority: prio.value,
+                completed: false
+            };
+
+            state.tasks.push(newTask);
+            input.value = "";
+            saveData();
+            renderTasks();
+            updateScore();
+        }
+
+        function renderTasks(filter = 'all') {
+            const list = document.getElementById('task-list');
+            list.innerHTML = "";
+            
+            const filtered = state.tasks.filter(t => {
+                if(filter === 'pending') return !t.completed;
+                return true;
+            });
+
+            filtered.forEach(task => {
+                const div = document.createElement('div');
+                div.className = `task-card ${task.completed ? 'completed' : ''}`;
+                div.style.borderLeftColor = task.priority === 'High' ? '#ff3366' : (task.priority === 'Medium' ? '#00c8ff' : '#00ff66');
+                
+                div.innerHTML = `
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                        <span>${task.text} <small style="color:var(--text-dim); display:block; font-size:10px;">${task.category}</small></span>
+                    </div>
+                    <i class="fas fa-trash" style="cursor:pointer; color:#ff3366;" onclick="deleteTask(${task.id})"></i>
+                `;
+                list.appendChild(div);
+            });
+            
+            document.getElementById('stat-done').innerText = state.tasks.filter(t => t.completed).length;
+        }
+
+        function toggleTask(id) {
+            state.tasks = state.tasks.map(t => t.id === id ? {...t, completed: !t.completed} : t);
+            saveData();
+            renderTasks();
+            updateScore();
+        }
+
+        function deleteTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveData();
+            renderTasks();
+            updateScore();
+        }
+
+        function filterTasks(f) { renderTasks(f); }
+
+        // --- Habit & Tracker Logic ---
+        function addWater() {
+            state.water = (state.water + 1) % 10;
+            updateUI();
+            saveData();
+        }
+
+        function setMood(val) {
+            state.mood = val;
+            const moods = ["Aggressive", "Sad", "Neutral", "Happy", "Inspired"];
+            document.querySelectorAll('.mood-btn').forEach((b, i) => b.classList.toggle('active', i === val));
+            document.getElementById('mood-status').innerText = "Status: " + moods[val];
+            saveData();
+        }
+
+        function addFinance() {
+            const amt = document.getElementById('finance-amt');
+            if(!amt.value) return;
+            state.finance += parseFloat(amt.value);
+            amt.value = "";
+            updateUI();
+            saveData();
+        }
+
+        function promptWalk() {
+            const steps = prompt("Enter steps walked:");
+            if(steps) {
+                state.walkSteps += parseInt(steps);
+                updateUI();
+                saveData();
+            }
+        }
+
+        // --- Timer Logic ---
+        let timerInterval;
+        let timeLeft = 1500;
+        function toggleTimer() {
+            const modal = document.getElementById('timer-modal');
+            const ov = document.getElementById('overlay');
+            const show = modal.style.display === 'none' || modal.style.display === '';
+            modal.style.display = show ? 'block' : 'none';
+            ov.style.display = show ? 'block' : 'none';
+        }
+
+        function startTimer() {
+            if(timerInterval) return;
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const mins = Math.floor(timeLeft / 60);
+                const secs = timeLeft % 60;
+                document.getElementById('timer-display').innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                
+                if(timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    new Notification("Focus Session Complete!");
+                    state.focusMinutes += 25;
+                    updateUI();
+                }
+            }, 1000);
+        }
+
+        // --- Charts ---
+        let scoreChart, perfChart;
+        function initCharts() {
+            const ctx1 = document.getElementById('scoreChart').getContext('2d');
+            scoreChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [0, 100],
+                        backgroundColor: [ '#00ff66', '#1a1a1a' ],
+                        borderWidth: 0
+                    }]
+                },
+                options: { cutout: '80%', events: [] }
+            });
+
+            const ctx2 = document.getElementById('performanceChart').getContext('2d');
+            perfChart = new Chart(ctx2, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Productivity %',
+                        data: [65, 78, 90, 85, 92, 0, 0],
+                        borderColor: '#00c8ff',
+                        tension: 0.4,
+                        fill: true,
+                        backgroundColor: 'rgba(0, 200, 255, 0.1)'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { display: false },
+                        x: { grid: { display: false }, ticks: { color: '#555' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function updateScore() {
+            const totalTasks = state.tasks.length;
+            const doneTasks = state.tasks.filter(t => t.completed).length;
+            const taskFactor = totalTasks > 0 ? (doneTasks / totalTasks) * 60 : 0;
+            
+            const checkboxes = document.querySelectorAll('#habit-list input:checked').length;
+            const habitFactor = (checkboxes / 3) * 40;
+            
+            const finalScore = Math.round(taskFactor + habitFactor);
+            
+            scoreChart.data.datasets[0].data = [finalScore, 100 - finalScore];
+            scoreChart.update();
+            document.getElementById('score-percent').innerText = finalScore + "%";
+            
+            const label = document.getElementById('productivity-label');
+            if(finalScore > 80) label.innerText = "PRODUCTIVITY: EXCELLENT";
+            else if(finalScore > 50) label.innerText = "PRODUCTIVITY: STABLE";
+            else label.innerText = "PRODUCTIVITY: CRITICAL";
+        }
+
+        // --- Data Persistence ---
+        function saveData() {
+            state.notes = document.getElementById('notes-area').value;
+            localStorage.setItem('neon_core_data', JSON.stringify(state));
+            
+            const size = new Blob([JSON.stringify(state)]).size;
+            document.getElementById('storage-status').innerText = (size / 1024).toFixed(2) + "KB USED";
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('neon_core_data');
+            if(saved) {
+                state = JSON.parse(saved);
+                document.getElementById('notes-area').value = state.notes || "";
+                renderTasks();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('water-count').innerText = `${state.water} / 8 Glasses`;
+            document.getElementById('balance-amt').innerText = `$${state.finance.toFixed(2)}`;
+            document.getElementById('stat-walk').innerText = (state.walkSteps * 0.0008).toFixed(1) + " km";
+            document.getElementById('stat-streak').innerHTML = `${state.streak} <i class="fas fa-fire" style="color:#ff6600"></i>`;
+            document.getElementById('stat-focus').innerText = Math.floor(state.focusMinutes / 60) + "h " + (state.focusMinutes % 60) + "m";
+            updateScore();
+        }
+
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "neon_core_backup.json");
+            dlAnchorElem.click();
+        }
+
+        // Autosave notes
+        document.getElementById('notes-area').addEventListener('input', saveData);
+
+        // Keyboard Shortcuts
+        window.addEventListener('keydown', (e) => {
+            if(e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                document.getElementById('task-input').focus();
+            }
+        });
+    </script>
+</body>
+</html>
